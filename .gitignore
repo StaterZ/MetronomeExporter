@@ -1,0 +1,9 @@
+*
+!*/
+
+!.gitignore
+
+!*/Export.cpp
+!*/Export.h
+!*/json.hpp
+!*/*.Build.cs
