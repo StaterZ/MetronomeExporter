@@ -459,15 +459,25 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
         dst["type"] = "MeshRendererData";
         const FString pathPrefix = "Assets";
         const FString badPathPrefix = "Content";
+        const FString invalidPath = "???";
         FString path = src.GetStaticMesh()->AssetImportData->GetFirstFilename();
-        if (FPaths::MakePathRelativeTo(path, ToCStr(FPaths::ProjectDir())) && path.LeftChop(badPathPrefix.Len()) == badPathPrefix)
+        if (FPaths::MakePathRelativeTo(path, ToCStr(FPaths::ProjectDir())))
         {
-            path = pathPrefix + path.RightChop(badPathPrefix.Len());
+            UE_LOG(LogExporter, Display, TEXT("WEEEE: %s"), *path.Left(badPathPrefix.Len()))
+            if (path.Left(badPathPrefix.Len()) == badPathPrefix)
+            {
+                path = pathPrefix + path.RightChop(badPathPrefix.Len());
+            }
+        	else
+            {
+                UE_LOG(LogExporter, Warning, TEXT("Bad model path! Failed to replace root directory. Skipping \"%s\""), *path)
+        		path = invalidPath;
+            }
         }
     	else
         {
-	        UE_LOG(LogExporter, Warning, TEXT("Bad model path! Skipping \"%s\""), *path)
-	        path = "???";;
+	        UE_LOG(LogExporter, Warning, TEXT("Bad model path! Failed to make path relative. Skipping \"%s\""), *path)
+	        path = invalidPath;
         }
     	dst["modelPath"] = TCHAR_TO_UTF8(ToCStr(path));
         components.push_back(dst);
