@@ -318,8 +318,8 @@ void UExport::ExportNavMesh(const std::string& aOutPath)
                 FVector vec2 = { triangles.triangles[j].p2.x, triangles.triangles[j].p2.y, triangles.triangles[j].p2.z };
 
                 face.x = FindIndex(vec0, vertices) + 1;
-                face.y = FindIndex(vec1, vertices) + 1;
-                face.z = FindIndex(vec2, vertices) + 1;
+                face.y = FindIndex(vec2, vertices) + 1;
+                face.z = FindIndex(vec1, vertices) + 1;
                 faces.Add(face);
             }
         }
