@@ -258,11 +258,13 @@ void UExport::BeginPlay()
 {
     Super::BeginPlay();
 
-    ExportScene();
-    ExportNavMesh();
+    std::string stdFilePath = TCHAR_TO_UTF8(*filePath);
+    ExportScene(stdFilePath + "/navmeshExport.fab");
+    ExportNavMesh(stdFilePath + "/sceneExport.fab");
+    UE_LOG(LogExporter, Display, TEXT("Saved export to \"%s\""), *filePath);
 }
 
-void UExport::ExportNavMesh()
+void UExport::ExportNavMesh(const std::string& aOutPath)
 {
     ARecastNavMesh* recastNavMesh = Cast<ARecastNavMesh>(FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld())->GetDefaultNavDataInstance());
     if (recastNavMesh == nullptr) 
@@ -293,7 +295,7 @@ void UExport::ExportNavMesh()
             {
                 continue;
             }
-
+            
             for (int j = 0; j < verts.Num(); ++j)
             {
                 if (!vertices.Contains(verts[j]))
@@ -323,8 +325,7 @@ void UExport::ExportNavMesh()
         }
     }
 
-    std::string stdFilePath = TCHAR_TO_UTF8(*filePath);
-    std::ofstream file(stdFilePath + "/navmeshExport.obj");
+    std::ofstream file(aOutPath);
     for (const FVector& vec : vertices)
     {
         FVector newVec = ToExportPos(vec);
@@ -355,7 +356,7 @@ int UExport::FindIndex(const FVector& aKey, const TArray<FVector>& someVertices)
     return -1;
 }
 
-void UExport::ExportScene()
+void UExport::ExportScene(const std::string& aOutPath)
 {
     TArray<AActor*> actorsFound;
     TSubclassOf<AActor> classToFind = AActor::StaticClass();
@@ -371,10 +372,7 @@ void UExport::ExportScene()
         root["children"][i] = CreateEntity(*actorsFound[i]);
     }
 
-    const std::string outPath = std::string(TCHAR_TO_UTF8(*filePath)) + "/sceneExport.fab";
-    const FString outPathFString = outPath.c_str();
-    UE_LOG(LogExporter, Display, TEXT("Saved export to \"%s\""), *outPathFString);
-    std::ofstream file(outPath);
+    std::ofstream file(aOutPath);
     file << std::setw(4) << jsonFile;
     file.close();
 }

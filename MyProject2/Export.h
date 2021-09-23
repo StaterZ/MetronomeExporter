@@ -30,10 +30,10 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
-	void ExportNavMesh();
+	void ExportNavMesh(const std::string& aOutPath);
 	int FindIndex(const FVector& aKey, const TArray<FVector>& someVertices);
 
-	void ExportScene();
+	void ExportScene(const std::string& aOutPath);
 	nlohmann::json CreateEntity(const AActor& aActor);
 	nlohmann::json CreateComponents(const AActor& aActor);
 
