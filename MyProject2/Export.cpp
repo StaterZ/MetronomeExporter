@@ -7,6 +7,8 @@
 #include "Components/PointLightComponent.h"
 #include "Components/SpotLightComponent.h"
 #include "Components/DirectionalLightComponent.h"
+#include "Camera/CameraComponent.h"
+#include "EditorFramework/AssetImportData.h"
 #include "Kismet/GameplayStatics.h"
 #include <fstream>
 #include <iomanip>
@@ -19,10 +21,6 @@ DEFINE_LOG_CATEGORY(LogExporter);
 
 #include <algorithm>
 #include <vector>
-
-#include "Camera/CameraComponent.h"
-#include "EditorFramework/AssetImportData.h"
-
 namespace delaunay
 {
     constexpr double eps = 1e-4;
@@ -32,42 +30,26 @@ namespace delaunay
     {
         T x, y, z;
 
-        Point() : 
-            x{ 0 }, 
-            y{ 0 }, 
-            z{ 0 } 
-        {}
+        Point() : x{ 0 }, y{ 0 }, z{ 0 } {}
+        Point(T _x, T _y, T _z) : x{ _x }, y{ _y }, z{ _z } {}
 
-        Point(T aX, T aY, T aZ) : 
-            x{ aX }, 
-            y{ aY }, 
-            z{ aZ } 
-        {}
-
-        template<typename U>
-        Point<U> Cast()
+        template <typename U>
+        Point(U _x, U _y, U _z) : x{ static_cast<T>(_x) }, y{ static_cast<T>(_y) }, z{ static_cast<T>(_z) }
         {
-            return {
-                static_cast<U>(x), 
-                static_cast<U>(y), 
-                static_cast<U>(z)
-            }
         }
 
         friend std::ostream& operator<<(std::ostream& os, const Point<T>& p)
         {
-            os << "(" << p.x << "," << p.y << ")";
+            os << "x=" << p.x << "  y=" << p.y;
             return os;
         }
 
         bool operator==(const Point<T>& other) const
         {
-            return x == other.x && y == other.y;
+            return (other.x == x && other.y == y);
         }
 
-        bool operator!=(const Point<T>& other) const { 
-            return !(*this == other); 
-        }
+        bool operator!=(const Point<T>& other) const { return !operator==(other); }
     };
 
     template <typename T>
@@ -231,12 +213,13 @@ namespace delaunay
         /* Remove original super triangle. */
         d.triangles.erase(
             std::remove_if(d.triangles.begin(), d.triangles.end(),
-                [&](auto const& tri)
-                {
-                    return ((tri.p0 == p0 || tri.p1 == p0 || tri.p2 == p0) ||
-                        (tri.p0 == p1 || tri.p1 == p1 || tri.p2 == p1) ||
-                        (tri.p0 == p2 || tri.p1 == p2 || tri.p2 == p2));
-                }),
+            [&](auto const& tri) {
+                return (
+                    (tri.p0 == p0 || tri.p1 == p0 || tri.p2 == p0) ||
+                    (tri.p0 == p1 || tri.p1 == p1 || tri.p2 == p1) ||
+                    (tri.p0 == p2 || tri.p1 == p2 || tri.p2 == p2)
+				);
+            }),
             d.triangles.end());
 
         /* Add edges. */
@@ -248,8 +231,7 @@ namespace delaunay
         }
         return d;
     }
-
-} /* namespace delaunay */
+}
 
 #pragma endregion
 
@@ -277,12 +259,17 @@ void UExport::BeginPlay()
     Super::BeginPlay();
 
     ExportScene();
-    //ExportNavMesh();
+    ExportNavMesh();
 }
 
 void UExport::ExportNavMesh()
 {
     ARecastNavMesh* recastNavMesh = Cast<ARecastNavMesh>(FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld())->GetDefaultNavDataInstance());
+    if (recastNavMesh == nullptr) 
+    {
+        UE_LOG(LogExporter, Warning, TEXT("No Navmesh detected, Skipping..."))
+    	return;
+	}
     dtNavMesh* navMesh = recastNavMesh->GetRecastMesh();
 
     TArray<FVector> vertices;
@@ -340,7 +327,8 @@ void UExport::ExportNavMesh()
     std::ofstream file(stdFilePath + "/NavMeshExport.obj");
     for (const FVector& vec : vertices)
     {
-        file << "v " << vec.X << " " << vec.Z << " " << vec.Y << std::endl;
+        FVector newVec = ToExportPos(vec);
+        file << "v " << newVec.X << " " << newVec.Y << " " << newVec.Z << std::endl;
     }
 
     for (const Face& face : faces)
