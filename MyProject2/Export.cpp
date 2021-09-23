@@ -451,7 +451,6 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
         FString path = src.GetStaticMesh()->AssetImportData->GetFirstFilename();
         if (FPaths::MakePathRelativeTo(path, ToCStr(FPaths::ProjectDir())))
         {
-            UE_LOG(LogExporter, Display, TEXT("WEEEE: %s"), *path.Left(badPathPrefix.Len()))
             if (path.Left(badPathPrefix.Len()) == badPathPrefix)
             {
                 path = pathPrefix + path.RightChop(badPathPrefix.Len());
