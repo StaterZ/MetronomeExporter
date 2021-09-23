@@ -324,7 +324,7 @@ void UExport::ExportNavMesh()
     }
 
     std::string stdFilePath = TCHAR_TO_UTF8(*filePath);
-    std::ofstream file(stdFilePath + "/NavMeshExport.obj");
+    std::ofstream file(stdFilePath + "/navmeshExport.obj");
     for (const FVector& vec : vertices)
     {
         FVector newVec = ToExportPos(vec);
@@ -371,7 +371,7 @@ void UExport::ExportScene()
         root["children"][i] = CreateEntity(*actorsFound[i]);
     }
 
-    const std::string outPath = std::string(TCHAR_TO_UTF8(*filePath)) + "/Export.fab";
+    const std::string outPath = std::string(TCHAR_TO_UTF8(*filePath)) + "/sceneExport.fab";
     const FString outPathFString = outPath.c_str();
     UE_LOG(LogExporter, Display, TEXT("Saved export to \"%s\""), *outPathFString);
     std::ofstream file(outPath);
