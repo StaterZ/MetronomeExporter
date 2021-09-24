@@ -441,12 +441,17 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
     for (int32 i = 0; i < staticMeshes.Num(); i++)
     {
         UStaticMeshComponent& src = *staticMeshes[i];
+        
+        FString path = src.GetStaticMesh()->AssetImportData->GetFirstFilename();
+        if (path == "C:/Program Files/Epic Games/UE_4.27/Engine/Content/EditorMeshes/MatineeCam_SM.FBX") {
+            continue;
+        }
+
         nlohmann::json dst;
         dst["type"] = "MeshRendererData";
         const FString pathPrefix = "Assets";
         const FString badPathPrefix = "Content";
         const FString invalidPath = "???";
-        FString path = src.GetStaticMesh()->AssetImportData->GetFirstFilename();
         if (FPaths::MakePathRelativeTo(path, ToCStr(FPaths::ProjectDir())))
         {
             if (path.Left(badPathPrefix.Len()) == badPathPrefix)
