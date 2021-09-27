@@ -386,7 +386,7 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
         const FTransform& src = aActor.GetTransform();
         nlohmann::json dst;
         dst["type"] = "TransformData";
-        dst["pos"] = CreateFVectorJson(ToExportPos(src.GetLocation()));
+        dst["pos"] = CreateFVectorJson(ToExportPos(src.GetLocation() * 0.01f));
         dst["rot"] = CreateFVectorJson(ToExportRot(src.GetRotation().Euler()));
         dst["scale"] = CreateFVectorJson(ToExportPos(src.GetScale3D()));
         components.push_back(dst);
