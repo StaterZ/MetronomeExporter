@@ -267,7 +267,7 @@ void UExport::BeginPlay()
 void UExport::ExportNavMesh(const std::string& aOutPath)
 {
     ARecastNavMesh* recastNavMesh = Cast<ARecastNavMesh>(FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld())->GetDefaultNavDataInstance());
-    if (recastNavMesh == nullptr) 
+    if (recastNavMesh == nullptr)
     {
         UE_LOG(LogExporter, Warning, TEXT("No Navmesh detected, Skipping..."))
     	return;
@@ -295,7 +295,7 @@ void UExport::ExportNavMesh(const std::string& aOutPath)
             {
                 continue;
             }
-            
+
             for (int j = 0; j < verts.Num(); ++j)
             {
                 if (!vertices.Contains(verts[j]))
@@ -377,7 +377,7 @@ void UExport::ExportScene(const std::string& aOutPath)
     file.close();
 }
 
-nlohmann::json UExport::CreateComponents(const AActor& aActor) 
+nlohmann::json UExport::CreateComponents(const AActor& aActor)
 {
     std::vector<nlohmann::json> components;
 
@@ -441,7 +441,7 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
     for (int32 i = 0; i < staticMeshes.Num(); i++)
     {
         UStaticMeshComponent& src = *staticMeshes[i];
-        
+
         FString path = src.GetStaticMesh()->AssetImportData->GetFirstFilename();
         if (path == "C:/Program Files/Epic Games/UE_4.27/Engine/Content/EditorMeshes/MatineeCam_SM.FBX") {
             continue;
@@ -486,17 +486,17 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
         dst["farPlane"] = farPlane;
         components.push_back(dst);
     }
-    
+
     return components;
 }
 
-nlohmann::json UExport::CreateEntity(const AActor& aActor) 
+nlohmann::json UExport::CreateEntity(const AActor& aActor)
 {
 	nlohmann::json entity;
     entity["name"] = TCHAR_TO_UTF8(ToCStr(aActor.GetName()));
 
 	entity["components"] = CreateComponents(aActor);
-    
+
 	for (size_t i = 0; i < aActor.Children.Num(); i++)
 	{
         entity["children"][i] = CreateEntity(*aActor.Children[i]);
@@ -526,17 +526,21 @@ nlohmann::json UExport::CreateColorJson(const FLinearColor& aColor)
 FVector UExport::ToExportPos(const FVector& aPos)
 {
     FVector result;
+
     result.X = aPos.Y;
     result.Y = aPos.Z;
     result.Z = aPos.X;
+
     return result;
 }
 
 FVector UExport::ToExportRot(const FVector& aRot)
 {
     FVector result;
+
     result.X = -aRot.Y;
     result.Y = aRot.Z;
     result.Z = -aRot.X;
+
     return result;
 }
