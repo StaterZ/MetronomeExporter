@@ -402,7 +402,7 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
         dst["type"] = "PointLightData";
         dst["color"] = CreateColorJson(src.GetLightColor());
         dst["intensity"] = src.Intensity;
-        dst["range"] = src.SourceRadius;
+        dst["range"] = src.AttenuationRadius;
         components.push_back(dst);
     }
 
@@ -416,7 +416,7 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
         dst["type"] = "SpotLightData";
         dst["color"] = CreateColorJson(src.GetLightColor());
         dst["intensity"] = src.Intensity;
-        dst["range"] = src.SourceRadius;
+        dst["range"] = src.AttenuationRadius;
         dst["innerRadius"] = src.InnerConeAngle;
         dst["outerRadius"] = src.OuterConeAngle;
         components.push_back(dst);
