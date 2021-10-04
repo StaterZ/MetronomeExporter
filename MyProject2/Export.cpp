@@ -494,18 +494,23 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 
 void UExport::CheckLight(UPointLightComponent& aLight)
 {
+	constexpr float correctFalloffExponent = 2;
 	if (shouldAutoFixLights)
 	{
 		aLight.bUseInverseSquaredFalloff = false;
-		aLight.LightFalloffExponent = 2;
+		aLight.LightFalloffExponent = correctFalloffExponent;
 	}
+
+	const FString name = aLight.GetName();
 	if (aLight.bUseInverseSquaredFalloff)
 	{
-		UE_LOG(LogExporter, Warning, TEXT("Bad pointlight! Light has inverse square falloff. Turn it off!"))
+		UE_LOG(LogExporter, Warning, TEXT("Bad light (%s)! Inverse square falloff is not allowed. Turn it off!"), *name)
 	}
-	if (aLight.LightFalloffExponent == 2)
+	if (aLight.LightFalloffExponent != correctFalloffExponent)
 	{
-		UE_LOG(LogExporter, Warning, TEXT("Bad pointlight! Light has inverse square falloff. Turn it off!"))
+		const wchar_t* falloffExponentStr = UTF8_TO_TCHAR(std::to_string(aLight.LightFalloffExponent).c_str());
+		const wchar_t* correctFalloffExponentStr = UTF8_TO_TCHAR(std::to_string(correctFalloffExponent).c_str());
+		UE_LOG(LogExporter, Warning, TEXT("Bad light (%s)! falloff exponent is %s it needs to be %s"), *name, falloffExponentStr, correctFalloffExponentStr)
 	}
 }
 
