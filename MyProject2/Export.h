@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "json.hpp"
+#include "Components/PointLightComponent.h"
 #include "Export.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogExporter, Log, All);
@@ -19,6 +20,7 @@ public:
 	UExport();
 
 	UPROPERTY(EditAnywhere) FString filePath;
+	UPROPERTY(EditAnywhere) bool shouldAutoFixLights = false;
 	UPROPERTY(EditAnywhere) float nearPlane = 0.1f;
 	UPROPERTY(EditAnywhere) float farPlane = 1000.0f;
 
@@ -36,6 +38,7 @@ private:
 	void ExportScene(const std::string& aOutPath);
 	nlohmann::json CreateEntity(const AActor& aActor);
 	nlohmann::json CreateComponents(const AActor& aActor);
+	void CheckLight(UPointLightComponent& aLight);
 
 	nlohmann::json CreateFVectorJson(const FVector& aVector);
 	nlohmann::json CreateColorJson(const FLinearColor& aColor);
