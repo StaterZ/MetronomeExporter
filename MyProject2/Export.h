@@ -45,5 +45,5 @@ private:
 	nlohmann::json CreateColorJson(const FLinearColor& aColor);
 
 	static FVector ToExportPos(const FVector& aPos);
-	static FVector ToExportRot(const FVector& aRot);
+	static FQuat ToExportRot(const FQuat& aRot);
 };
