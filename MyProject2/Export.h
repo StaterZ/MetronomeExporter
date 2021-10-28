@@ -41,6 +41,7 @@ private:
 	void CheckLight(UPointLightComponent& aLight);
 
 	nlohmann::json CreateFVectorJson(const FVector& aVector);
+	nlohmann::json CreateFQuatJson(const FQuat& aQuat);
 	nlohmann::json CreateColorJson(const FLinearColor& aColor);
 
 	static FVector ToExportPos(const FVector& aPos);

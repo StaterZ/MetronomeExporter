@@ -363,7 +363,7 @@ void UExport::ExportScene(const std::string& aOutPath)
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), classToFind, actorsFound);
 
 	nlohmann::json jsonFile;
-	jsonFile["fileVersion"] = "2.0";
+	jsonFile["fileVersion"] = "2.1";
 	nlohmann::json& root = jsonFile["root"];
 	root["name"] = "UnrealScene";
 	root["components"] = std::vector<nlohmann::json>();
@@ -387,7 +387,7 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 		nlohmann::json dst;
 		dst["type"] = "TransformData";
 		dst["pos"] = CreateFVectorJson(ToExportPos(src.GetLocation() * 0.01f));
-		dst["rot"] = CreateFVectorJson(ToExportRot(src.GetRotation().Euler()));
+		dst["rot"] = CreateFQuatJson(src.GetRotation());
 		dst["scale"] = CreateFVectorJson(ToExportPos(src.GetScale3D()));
 		components.push_back(dst);
 	}
@@ -535,6 +535,15 @@ nlohmann::json UExport::CreateFVectorJson(const FVector& aVector)
 		{"x", aVector.X},
 		{"y", aVector.Y},
 		{"z", aVector.Z}
+	};
+}
+nlohmann::json UExport::CreateFQuatJson(const FQuat& aQuat)
+{
+	return {
+		{"x", aQuat.X},
+		{"y", aQuat.Y},
+		{"z", aQuat.Z},
+		{"w", aQuat.W}
 	};
 }
 nlohmann::json UExport::CreateColorJson(const FLinearColor& aColor)
