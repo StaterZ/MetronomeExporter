@@ -363,7 +363,7 @@ void UExport::ExportScene(const std::string& aOutPath)
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), classToFind, actorsFound);
 
 	nlohmann::json jsonFile;
-	jsonFile["fileVersion"] = "2.1";
+	jsonFile["fileVersion"] = "2.2";
 	nlohmann::json& root = jsonFile["root"];
 	root["name"] = "UnrealScene";
 	root["components"] = std::vector<nlohmann::json>();
@@ -386,9 +386,9 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 		const FTransform& src = aActor.GetTransform();
 		nlohmann::json dst;
 		dst["type"] = "TransformData";
-		dst["pos"] = CreateFVectorJson(ToExportPos(src.GetLocation() * 0.01f));
-		dst["rot"] = CreateFQuatJson(src.GetRotation());
-		dst["scale"] = CreateFVectorJson(ToExportPos(src.GetScale3D()));
+		dst["params"]["pos"] = CreateFVectorJson(ToExportPos(src.GetLocation() * 0.01f));
+		dst["params"]["rot"] = CreateFQuatJson(src.GetRotation());
+		dst["params"]["scale"] = CreateFVectorJson(ToExportPos(src.GetScale3D()));
 		components.push_back(dst);
 	}
 
@@ -401,9 +401,9 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 		CheckLight(src);
 		nlohmann::json dst;
 		dst["type"] = "PointLightData";
-		dst["color"] = CreateColorJson(src.GetLightColor());
-		dst["intensity"] = src.Intensity;
-		dst["range"] = src.AttenuationRadius * 0.01f;
+		dst["params"]["color"] = CreateColorJson(src.GetLightColor());
+		dst["params"]["intensity"] = src.Intensity;
+		dst["params"]["range"] = src.AttenuationRadius * 0.01f;
 		components.push_back(dst);
 	}
 
@@ -416,11 +416,11 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 		CheckLight(src);
 		nlohmann::json dst;
 		dst["type"] = "SpotLightData";
-		dst["color"] = CreateColorJson(src.GetLightColor());
-		dst["intensity"] = src.Intensity;
-		dst["range"] = src.AttenuationRadius * 0.01f;
-		dst["innerRadius"] = src.InnerConeAngle;
-		dst["outerRadius"] = src.OuterConeAngle;
+		dst["params"]["color"] = CreateColorJson(src.GetLightColor());
+		dst["params"]["intensity"] = src.Intensity;
+		dst["params"]["range"] = src.AttenuationRadius * 0.01f;
+		dst["params"]["innerRadius"] = src.InnerConeAngle;
+		dst["params"]["outerRadius"] = src.OuterConeAngle;
 		components.push_back(dst);
 	}
 
@@ -432,8 +432,8 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 		UDirectionalLightComponent& src = *directionalLights[i];
 		nlohmann::json dst;
 		dst["type"] = "DirectionalLightData";
-		dst["color"] = CreateColorJson(src.GetLightColor());
-		dst["intensity"] = src.Intensity;
+		dst["params"]["color"] = CreateColorJson(src.GetLightColor());
+		dst["params"]["intensity"] = src.Intensity;
 		components.push_back(dst);
 	}
 
@@ -471,7 +471,7 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 			UE_LOG(LogExporter, Error, TEXT("Bad model path! Failed to make path relative. Skipping \"%s\""), *path)
 			path = invalidPath;
 		}
-		dst["modelPath"] = TCHAR_TO_UTF8(ToCStr(path));
+		dst["params"]["modelPath"] = TCHAR_TO_UTF8(ToCStr(path));
 		components.push_back(dst);
 	}
 
@@ -483,9 +483,9 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 		UCameraComponent& src = *cameras[i];
 		nlohmann::json dst;
 		dst["type"] = "CameraData";
-		dst["fov"] = src.FieldOfView;
-		dst["nearPlane"] = nearPlane;
-		dst["farPlane"] = farPlane;
+		dst["params"]["fov"] = src.FieldOfView;
+		dst["params"]["nearPlane"] = nearPlane;
+		dst["params"]["farPlane"] = farPlane;
 		components.push_back(dst);
 	}
 
