@@ -572,9 +572,10 @@ FQuat UExport::ToExportRot(const FQuat& aRot)
 	FQuat result;
 
 	result.X = aRot.X;
-	result.Y = aRot.Z;
-	result.Z = -aRot.Y;
+	result.Y = -aRot.Z;
+	result.Z = aRot.Y;
 	result.W = aRot.W;
+	result.Normalize();
 
 	return result;
 }
