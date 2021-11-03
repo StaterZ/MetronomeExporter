@@ -563,9 +563,9 @@ FVector UExport::ToExportPos(const FVector& aPos)
 {
 	FVector result;
 
-	result.X = aPos.Y;
+	result.X = aPos.X;
 	result.Y = aPos.Z;
-	result.Z = aPos.X;
+	result.Z = -aPos.Y;
 
 	return result;
 }
