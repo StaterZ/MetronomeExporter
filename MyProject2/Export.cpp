@@ -388,7 +388,7 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 		dst["type"] = "TransformData";
 		dst["params"]["pos"] = CreateFVectorJson(ToExportPos(src.GetLocation() * 0.01f));
 		dst["params"]["rot"] = CreateFQuatJson(ToExportRot(src.GetRotation()));
-		dst["params"]["scale"] = CreateFVectorJson(ToExportPos(src.GetScale3D()));
+		dst["params"]["scale"] = CreateFVectorJson(ToExportScale(src.GetScale3D()));
 		components.push_back(dst);
 	}
 
@@ -576,9 +576,20 @@ FQuat UExport::ToExportRot(const FQuat& aRot)
 
 	result.X = aRot.X;
 	result.Y = -aRot.Z;
-	result.Z = -aRot.Y;
+	result.Z = aRot.Y;
 	result.W = aRot.W;
 	result.Normalize(); //we shouldn't need this but better safe than sorry
+
+	return result;
+}
+
+FVector UExport::ToExportScale(const FVector& aPos)
+{
+	FVector result;
+
+	result.X = aPos.X;
+	result.Y = aPos.Z;
+	result.Z = aPos.Y;
 
 	return result;
 }
