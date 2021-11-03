@@ -583,13 +583,13 @@ FQuat UExport::ToExportRot(const FQuat& aRot)
 	return result;
 }
 
-FVector UExport::ToExportScale(const FVector& aPos)
+FVector UExport::ToExportScale(const FVector& aScale)
 {
 	FVector result;
 
-	result.X = aPos.X;
-	result.Y = aPos.Z;
-	result.Z = aPos.Y;
+	result.X = aScale.X;
+	result.Y = aScale.Z;
+	result.Z = aScale.Y;
 
 	return result;
 }
