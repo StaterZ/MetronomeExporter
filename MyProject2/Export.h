@@ -46,5 +46,5 @@ private:
 
 	static FVector ToExportPos(const FVector& aPos);
 	static FQuat ToExportRot(const FQuat& aRot);
-	static FQuat ToExportScale(const FQuat& aScale);
+	static FQuat ToExportScale(const FVector& aScale);
 };
