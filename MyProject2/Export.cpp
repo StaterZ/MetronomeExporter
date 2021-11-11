@@ -462,6 +462,17 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 			if (path.Left(badPathPrefix.Len()) == badPathPrefix)
 			{
 				path = pathPrefix + path.RightChop(badPathPrefix.Len());
+
+				const FString rawExt = ".fbx";
+				const FString exportExt = ".wardh";
+				if (path.EndsWith(rawExt)) 
+				{
+					path = path.Replace(&rawExt[0], &exportExt[0]); //slightly unreliable but it will do...
+				}
+				else 
+				{
+					UE_LOG(LogExporter, Warning, TEXT("Bad model path! Failed to find fbx extension. Exporting with raw extension..."), *path)
+				}
 			}
 			else
 			{
