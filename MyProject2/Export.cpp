@@ -14,6 +14,7 @@
 #include <iomanip>
 #include <string>
 #include <vector>
+#include "LevelTrigger.h"
 
 DEFINE_LOG_CATEGORY(LogExporter);
 
@@ -500,6 +501,20 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 		dst["params"]["fov"] = src.FieldOfView;
 		dst["params"]["nearPlane"] = nearPlane;
 		dst["params"]["farPlane"] = farPlane;
+		components.push_back(dst);
+	}
+
+
+	//Things
+	TArray<ULevelTrigger*> levelTriggers;
+	aActor.GetComponents<ULevelTrigger>(levelTriggers);
+	for (int32 i = 0; i < levelTriggers.Num(); i++)
+	{
+		ULevelTrigger& src = *levelTriggers[i];
+		
+		nlohmann::json dst;
+		dst["type"] = "LevelTriggerData";
+		dst["params"]["soundPath"] = TCHAR_TO_UTF8(ToCStr(src.audioPath));
 		components.push_back(dst);
 	}
 

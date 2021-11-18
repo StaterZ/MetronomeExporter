@@ -5,5 +5,7 @@
 
 !*/Export.cpp
 !*/Export.h
+!*/LevelTrigger.cpp
+!*/LevelTrigger.h
 !*/json.hpp
 !*/*.Build.cs
