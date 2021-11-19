@@ -602,9 +602,9 @@ FVector UExport::ToExportPos(const FVector& aPos)
 {
 	FVector result;
 
-	result.X = aPos.X;
+	result.X = aPos.Y;
 	result.Y = aPos.Z;
-	result.Z = -aPos.Y;
+	result.Z = aPos.X;
 
 	return result;
 }
@@ -626,9 +626,9 @@ FVector UExport::ToExportScale(const FVector& aScale)
 {
 	FVector result;
 
-	result.X = aScale.X;
+	result.X = aScale.Y;
 	result.Y = aScale.Z;
-	result.Z = aScale.Y;
+	result.Z = aScale.X;
 
 	return result;
 }
