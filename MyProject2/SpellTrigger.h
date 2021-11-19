@@ -7,13 +7,13 @@
 #include "SpellTrigger.generated.h"
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
-class MYPROJECT2_API ULevelTrigger : public UActorComponent
+class MYPROJECT2_API USpellTrigger : public UActorComponent
 {
     GENERATED_BODY()
 
 public:
     // Sets default values for this component's properties
-    ULevelTrigger();
+    USpellTrigger();
 
     UPROPERTY(EditAnywhere)
     int spellID;
