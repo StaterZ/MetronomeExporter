@@ -1,5 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
+
 #include "SpellTrigger.h"
 
 // Sets default values for this component's properties
@@ -12,6 +13,7 @@ USpellTrigger::USpellTrigger()
     // ...
 }
 
+
 // Called when the game starts
 void USpellTrigger::BeginPlay()
 {
@@ -20,8 +22,9 @@ void USpellTrigger::BeginPlay()
     // ...
 }
 
+
 // Called every frame
-void USpellTrigger::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
+void USpellTrigger::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 

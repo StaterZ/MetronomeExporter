@@ -15,6 +15,7 @@
 #include <string>
 #include <vector>
 #include "LevelTrigger.h"
+#include "SpellTrigger.h"
 
 DEFINE_LOG_CATEGORY(LogExporter);
 
@@ -504,8 +505,7 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 		components.push_back(dst);
 	}
 
-
-	//Things
+	//LevelTrigger
 	TArray<ULevelTrigger*> levelTriggers;
 	aActor.GetComponents<ULevelTrigger>(levelTriggers);
 	for (int32 i = 0; i < levelTriggers.Num(); i++)
@@ -518,12 +518,12 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 		components.push_back(dst);
 	}
 
-
+	//SpellTrigger
 	TArray<USpellTrigger*> spellTriggers;
 	aActor.GetComponents<USpellTrigger>(spellTriggers);
 	for (int32 i = 0; i < spellTriggers.Num(); i++)
 	{
-		USpellTrigger &src = *SpellTriggers[i];
+		USpellTrigger &src = *spellTriggers[i];
 
 		nlohmann::json dst;
 		dst["type"] = "SpellTriggerData";

@@ -6,7 +6,8 @@
 #include "Components/ActorComponent.h"
 #include "SpellTrigger.generated.h"
 
-UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
+
+UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class MYPROJECT2_API USpellTrigger : public UActorComponent
 {
     GENERATED_BODY()
@@ -15,8 +16,7 @@ public:
     // Sets default values for this component's properties
     USpellTrigger();
 
-    UPROPERTY(EditAnywhere)
-    int spellID;
+    UPROPERTY(EditAnywhere) int spellID;
 
 protected:
     // Called when the game starts
@@ -24,5 +24,5 @@ protected:
 
 public:
     // Called every frame
-    virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override;
+    virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 };
