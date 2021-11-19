@@ -518,6 +518,19 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 		components.push_back(dst);
 	}
 
+
+	TArray<USpellTrigger*> spellTriggers;
+	aActor.GetComponents<USpellTrigger>(spellTriggers);
+	for (int32 i = 0; i < spellTriggers.Num(); i++)
+	{
+		USpellTrigger &src = *SpellTriggers[i];
+
+		nlohmann::json dst;
+		dst["type"] = "SpellTriggerData";
+		dst["params"]["spellID"] = src.spellID;
+		components.push_back(dst);
+	}
+
 	return components;
 }
 
