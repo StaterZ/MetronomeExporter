@@ -365,7 +365,7 @@ void UExport::ExportScene(const std::string& aOutPath)
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), classToFind, actorsFound);
 
 	nlohmann::json jsonFile;
-	jsonFile["fileVersion"] = "2.2";
+	jsonFile["fileVersion"] = "2.5";
 	nlohmann::json& root = jsonFile["root"];
 	root["name"] = "UnrealScene";
 	root["components"] = std::vector<nlohmann::json>();
@@ -614,8 +614,8 @@ FQuat UExport::ToExportRot(const FQuat& aRot)
 	FQuat result;
 
 	result.X = aRot.X;
-	result.Y = -aRot.Z;
-	result.Z = aRot.Y;
+	result.Y = aRot.Z;
+	result.Z = -aRot.Y;
 	result.W = aRot.W;
 	result.Normalize(); //we shouldn't need this but better safe than sorry
 
