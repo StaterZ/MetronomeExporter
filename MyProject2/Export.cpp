@@ -262,7 +262,7 @@ void UExport::BeginPlay()
 
 	const std::string stdFilePath = TCHAR_TO_UTF8(*filePath);
 	ExportScene(stdFilePath + "/sceneExport.fab");
-	ExportNavMesh(stdFilePath + "/navmeshExport.obj");
+	ExportNavMesh(stdFilePath + "/sceneExportNav.obj");
 	UE_LOG(LogExporter, Display, TEXT("Saved export to \"%s\""), *filePath);
 }
 
