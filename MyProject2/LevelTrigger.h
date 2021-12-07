@@ -17,6 +17,8 @@ public:
 	ULevelTrigger();
 
 	UPROPERTY(EditAnywhere) FString audioPath;
+	UPROPERTY(EditAnywhere) FString spritePath;
+	UPROPERTY(EditAnywhere) float duration;
 
 protected:
 	// Called when the game starts

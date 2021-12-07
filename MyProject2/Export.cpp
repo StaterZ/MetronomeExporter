@@ -515,6 +515,8 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 		nlohmann::json dst;
 		dst["type"] = "LevelTriggerData";
 		dst["params"]["soundPath"] = TCHAR_TO_UTF8(ToCStr(src.audioPath));
+		dst["params"]["spritePath"] = TCHAR_TO_UTF8(ToCStr(src.spritePath));
+		dst["params"]["duration"] = src.duration;
 		components.push_back(dst);
 	}
 
