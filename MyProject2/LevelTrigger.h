@@ -18,6 +18,7 @@ public:
 
 	UPROPERTY(EditAnywhere) FString audioPath;
 	UPROPERTY(EditAnywhere) FString spritePath;
+	UPROPERTY(EditAnywhere) FString spritePath2;
 	UPROPERTY(EditAnywhere) float duration;
 
 protected:
