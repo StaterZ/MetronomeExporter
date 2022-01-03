@@ -17,6 +17,11 @@
 #include "LevelTrigger.h"
 #include "SpellTrigger.h"
 
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#undef min
+#undef max
+
 DEFINE_LOG_CATEGORY(LogExporter);
 
 #pragma region Triangulation
@@ -260,10 +265,14 @@ void UExport::BeginPlay()
 {
 	Super::BeginPlay();
 
-	const std::string stdFilePath = TCHAR_TO_UTF8(*filePath);
-	ExportScene(stdFilePath + "/sceneExport.fab");
-	ExportNavMesh(stdFilePath + "/sceneExportNav.obj");
-	UE_LOG(LogExporter, Display, TEXT("Saved export to \"%s\""), *filePath);
+	UE_LOG(LogExporter, Display, TEXT("New export started!"));
+
+	const std::string stdSceneExportName = TCHAR_TO_UTF8(*sceneExportName);
+	const std::string stdSceneExportPath = TCHAR_TO_UTF8(*sceneExportPath);
+	ExportScene(stdSceneExportPath + "/" + stdSceneExportName + ".fab");
+	ExportNavMesh(stdSceneExportPath + "/" + stdSceneExportName + "Nav.obj");
+
+	UE_LOG(LogExporter, Display, TEXT("Saved export to \"%s\""), *sceneExportPath);
 }
 
 void UExport::ExportNavMesh(const std::string& aOutPath)
@@ -360,13 +369,15 @@ int UExport::FindIndex(const FVector& aKey, const TArray<FVector>& someVertices)
 
 void UExport::ExportScene(const std::string& aOutPath)
 {
+	context = ExportContext();
+
 	TArray<AActor*> actorsFound;
 	TSubclassOf<AActor> classToFind = AActor::StaticClass();
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), classToFind, actorsFound);
 
-	nlohmann::json jsonFile;
-	jsonFile["fileVersion"] = "2.5";
-	nlohmann::json& root = jsonFile["root"];
+	nlohmann::json json;
+	json["fileVersion"] = "3.0";
+	nlohmann::json& root = json["root"];
 	root["name"] = "UnrealScene";
 	root["components"] = std::vector<nlohmann::json>();
 	for (size_t i = 0; i < actorsFound.Num(); i++)
@@ -374,167 +385,129 @@ void UExport::ExportScene(const std::string& aOutPath)
 		root["children"][i] = CreateEntity(*actorsFound[i]);
 	}
 
-	std::ofstream file(aOutPath);
-	file << std::setw(4) << jsonFile;
-	file.close();
+	WriteJsonToFile(aOutPath, json);
 }
 
 nlohmann::json UExport::CreateComponents(const AActor& aActor)
 {
-	std::vector<nlohmann::json> components;
+	nlohmann::json components;
 
 	//Transforms
-	{
-		const FTransform& src = aActor.GetTransform();
-		nlohmann::json dst;
-		dst["type"] = "TransformData";
-		dst["params"]["pos"] = CreateFVectorJson(ToExportPos(src.GetLocation() * 0.01f));
-		dst["params"]["rot"] = CreateFQuatJson(ToExportRot(src.GetRotation()));
-		dst["params"]["scale"] = CreateFVectorJson(ToExportScale(src.GetScale3D()));
-		components.push_back(dst);
-	}
+	components.push_back(CreateComponentJson("TransformData", CreateTransformJson(aActor.GetTransform())));
 
 	//Pointlights
-	TArray<UPointLightComponent*> pointLights;
-	aActor.GetComponents<UPointLightComponent>(pointLights);
-	for (int32 i = 0; i < pointLights.Num(); i++)
-	{
-		UPointLightComponent& src = *pointLights[i];
-		CheckLight(src);
-		nlohmann::json dst;
-		dst["type"] = "PointLightData";
-		dst["params"]["color"] = CreateColorJson(src.GetLightColor());
-		dst["params"]["intensity"] = src.Intensity;
-		dst["params"]["range"] = src.AttenuationRadius * 0.01f;
-		components.push_back(dst);
-	}
+	ForeachComponent<UPointLightComponent>(aActor, [&](UPointLightComponent& aSrc){
+		CheckLight(aSrc);
+		components.push_back(CreateComponentJson("PointLightData", CreatePointLightJson(aSrc)));
+	});
 
 	//Spotlights
-	TArray<USpotLightComponent*> spotLights;
-	aActor.GetComponents<USpotLightComponent>(spotLights);
-	for (int32 i = 0; i < spotLights.Num(); i++)
-	{
-		USpotLightComponent& src = *spotLights[i];
-		CheckLight(src);
-		nlohmann::json dst;
-		dst["type"] = "SpotLightData";
-		dst["params"]["color"] = CreateColorJson(src.GetLightColor());
-		dst["params"]["intensity"] = src.Intensity;
-		dst["params"]["range"] = src.AttenuationRadius * 0.01f;
-		dst["params"]["innerRadius"] = src.InnerConeAngle;
-		dst["params"]["outerRadius"] = src.OuterConeAngle;
-		components.push_back(dst);
-	}
+	ForeachComponent<USpotLightComponent>(aActor, [&](USpotLightComponent& aSrc) {
+		CheckLight(aSrc);
+		components.push_back(CreateComponentJson("SpotLightData", CreateSpotLightJson(aSrc)));
+	});
 
 	//DirectionalLights
-	TArray<UDirectionalLightComponent*> directionalLights;
-	aActor.GetComponents<UDirectionalLightComponent>(directionalLights);
-	for (int32 i = 0; i < directionalLights.Num(); i++)
-	{
-		UDirectionalLightComponent& src = *directionalLights[i];
-		nlohmann::json dst;
-		dst["type"] = "DirectionalLightData";
-		dst["params"]["color"] = CreateColorJson(src.GetLightColor());
-		dst["params"]["intensity"] = src.Intensity;
-		components.push_back(dst);
-	}
+	ForeachComponent<UDirectionalLightComponent>(aActor, [&](UDirectionalLightComponent& aSrc) {
+		components.push_back(CreateComponentJson("DirectionalLightData", CreateDirectionalLightJson(aSrc)));
+	});
 
 	//MeshRenderers
-	TArray<UStaticMeshComponent*> staticMeshes;
-	aActor.GetComponents<UStaticMeshComponent>(staticMeshes);
-	for (int32 i = 0; i < staticMeshes.Num(); i++)
-	{
-		UStaticMeshComponent& src = *staticMeshes[i];
+	ForeachComponent<UStaticMeshComponent>(aActor, [&](UStaticMeshComponent& aSrc) {
+		UStaticMesh* staticMesh = aSrc.GetStaticMesh();
+		if (staticMesh == nullptr) return;
 
-		UStaticMesh* staticMesh = src.GetStaticMesh();
-		if (staticMesh == nullptr) continue;
+		FString modelPath = staticMesh->AssetImportData->GetFirstFilename();
+		if (modelPath == "C:/Program Files/Epic Games/UE_4.27/Engine/Content/EditorMeshes/MatineeCam_SM.FBX") return;
 
-		FString path = staticMesh->AssetImportData->GetFirstFilename();
-		if (path == "C:/Program Files/Epic Games/UE_4.27/Engine/Content/EditorMeshes/MatineeCam_SM.FBX") {
-			continue;
-		}
-
-		nlohmann::json dst;
-		dst["type"] = "MeshRendererData";
-		const FString pathPrefix = "Assets";
-		const FString badPathPrefix = "Content";
-		const FString invalidPath = "???";
-		if (FPaths::MakePathRelativeTo(path, ToCStr(FPaths::ProjectDir())))
+		nlohmann::json params;
+		
+		//process path
+		switch (ResolvePath(modelPath, "Content", "Assets"))
 		{
-			if (path.Left(badPathPrefix.Len()) == badPathPrefix)
+		case ResolvePathResult::Success: {
+			const FString rawExt = ".fbx";
+			const FString exportExt = ".wardh";
+			if (modelPath.EndsWith(rawExt))
 			{
-				path = pathPrefix + path.RightChop(badPathPrefix.Len());
-
-				const FString rawExt = ".fbx";
-				const FString exportExt = ".wardh";
-				if (path.EndsWith(rawExt)) 
-				{
-					path = path.Replace(&rawExt[0], &exportExt[0]); //slightly unreliable but it will do...
-				}
-				else 
-				{
-					UE_LOG(LogExporter, Warning, TEXT("Bad model path! Failed to find fbx extension. Exporting with raw extension..."), *path)
-				}
+				modelPath = modelPath.Replace(&rawExt[0], &exportExt[0]); //slightly unreliable but it'll do...
 			}
 			else
 			{
-				UE_LOG(LogExporter, Error, TEXT("Bad model path! Failed to replace root directory. Skipping \"%s\""), *path)
-				path = invalidPath;
+				UE_LOG(LogExporter, Warning, TEXT("Bad model path! Failed to find fbx extension. Exporting with raw extension..."), *modelPath)
 			}
+			break;
 		}
-		else
+		case ResolvePathResult::MakeRelativeFailed:
+			UE_LOG(LogExporter, Error, TEXT("Bad model path! Failed to make path relative. Skipping \"%s\""), *modelPath)
+			modelPath = modelFallbackPath;
+			break;
+		case ResolvePathResult::PrefixFailed:
+			UE_LOG(LogExporter, Error, TEXT("Bad model path! Failed to replace root directory. Skipping \"%s\""), *modelPath)
+			modelPath = modelFallbackPath;
+			break;
+		}
+		params["modelPath"] = TCHAR_TO_UTF8(ToCStr(modelPath));
+
+		//process materials
+		for (const UMaterialInterface* material : aSrc.GetMaterials())
 		{
-			UE_LOG(LogExporter, Error, TEXT("Bad model path! Failed to make path relative. Skipping \"%s\""), *path)
-			path = invalidPath;
+			FString materialPath;
+			FString name = material->GetName();
+			if (name != "WorldGridMaterial")
+			{
+				EnsureFolder("Materials");
+				materialPath = "Assets/Materials/" + name + ".mat";
+				FString materialExportPath = "Materials/" + name + ".mat";
+				EnsureMaterial(materialPath);
+			}
+			else
+			{
+				materialPath = materialFallbackPath;
+			}
+			params["materials"].push_back(TCHAR_TO_UTF8(ToCStr(materialPath)));
 		}
-		dst["params"]["modelPath"] = TCHAR_TO_UTF8(ToCStr(path));
-		components.push_back(dst);
-	}
+
+		components.push_back(CreateComponentJson("MeshRendererData", params));
+	});
 
 	//Cameras
-	TArray<UCameraComponent*> cameras;
-	aActor.GetComponents<UCameraComponent>(cameras);
-	for (int32 i = 0; i < cameras.Num(); i++)
-	{
-		UCameraComponent& src = *cameras[i];
-		nlohmann::json dst;
-		dst["type"] = "CameraData";
-		dst["params"]["fov"] = src.FieldOfView;
-		dst["params"]["nearPlane"] = nearPlane;
-		dst["params"]["farPlane"] = farPlane;
-		components.push_back(dst);
-	}
+	ForeachComponent<UCameraComponent>(aActor, [&](UCameraComponent& aSrc) {
+		nlohmann::json params;
+		params["fov"] = aSrc.FieldOfView;
+		params["nearPlane"] = nearPlane;
+		params["farPlane"] = farPlane;
+		components.push_back(CreateComponentJson("CameraData", params));
+	});
 
 	//LevelTrigger
-	TArray<ULevelTrigger*> levelTriggers;
-	aActor.GetComponents<ULevelTrigger>(levelTriggers);
-	for (int32 i = 0; i < levelTriggers.Num(); i++)
-	{
-		ULevelTrigger& src = *levelTriggers[i];
-		
-		nlohmann::json dst;
-		dst["type"] = "LevelTriggerData";
-		dst["params"]["soundPath"] = TCHAR_TO_UTF8(ToCStr(src.audioPath));
-		dst["params"]["spritePath"] = TCHAR_TO_UTF8(ToCStr(src.spritePath));
-		dst["params"]["spritePath2"] = TCHAR_TO_UTF8(ToCStr(src.spritePath2));
-		dst["params"]["duration"] = src.duration;
-		components.push_back(dst);
-	}
+	ForeachComponent<ULevelTrigger>(aActor, [&](ULevelTrigger& aSrc) {
+		nlohmann::json params;
+		params["soundPath"] = TCHAR_TO_UTF8(ToCStr(aSrc.audioPath));
+		params["spritePath"] = TCHAR_TO_UTF8(ToCStr(aSrc.spritePath));
+		params["spritePath2"] = TCHAR_TO_UTF8(ToCStr(aSrc.spritePath2));
+		params["duration"] = aSrc.duration;
+		components.push_back(CreateComponentJson("LevelTriggerData", params));
+	});
 
 	//SpellTrigger
-	TArray<USpellTrigger*> spellTriggers;
-	aActor.GetComponents<USpellTrigger>(spellTriggers);
-	for (int32 i = 0; i < spellTriggers.Num(); i++)
-	{
-		USpellTrigger &src = *spellTriggers[i];
-
-		nlohmann::json dst;
-		dst["type"] = "SpellTriggerData";
-		dst["params"]["spellID"] = src.spellID;
-		components.push_back(dst);
-	}
+	ForeachComponent<USpellTrigger>(aActor, [&](USpellTrigger& aSrc) {
+		nlohmann::json params;
+		params["spellID"] = aSrc.spellID;
+		components.push_back(CreateComponentJson("SpellTriggerData", params));
+	});
 
 	return components;
+}
+
+nlohmann::json UExport::CreateComponentJson(const std::string& aType, const nlohmann::json& aParams)
+{
+	nlohmann::json result;
+
+	result["type"] = aType;
+	result["params"] = aParams;
+
+	return result;
 }
 
 void UExport::CheckLight(UPointLightComponent& aLight)
@@ -559,6 +532,97 @@ void UExport::CheckLight(UPointLightComponent& aLight)
 	}
 }
 
+void UExport::WriteJsonToFile(const std::string& aPath, const nlohmann::json& aJson) const
+{
+	std::ofstream stream(aPath);
+	if (!shouldMakeCompactJson)
+	{
+		stream << std::setw(4);
+	}
+	stream << aJson;
+	stream.close();
+}
+
+nlohmann::json UExport::CreateTransformJson(const FTransform& aSrc)
+{
+	nlohmann::json result;
+
+	result["pos"] = CreateFVectorJson(ToExportPos(aSrc.GetLocation() * 0.01f));
+	//result["rot"] = CreateFVectorJson(ToExportPos(aSrc.GetRotation().Euler()));
+	result["rot"] = CreateFQuatJson(ToExportRot(aSrc.GetRotation()));
+	result["scale"] = CreateFVectorJson(ToExportScale(aSrc.GetScale3D()));
+
+	return result;
+}
+
+UExport::ResolvePathResult UExport::ResolvePath(FString& aPath, const FString& aIncorrectPathPrefix, const FString& aCorrectPathPrefix)
+{
+	if (!FPaths::MakePathRelativeTo(aPath, ToCStr(FPaths::ProjectDir()))) return ResolvePathResult::MakeRelativeFailed;
+
+	if (aPath.Left(aIncorrectPathPrefix.Len()) != aIncorrectPathPrefix) return ResolvePathResult::PrefixFailed;
+
+	aPath = aCorrectPathPrefix + aPath.RightChop(aIncorrectPathPrefix.Len());
+	return ResolvePathResult::Success;
+}
+
+void UExport::ExportMaterial(const FString& aPath)
+{
+	nlohmann::json json;
+	
+	WriteJsonToFile(std::string(TCHAR_TO_UTF8(ToCStr(aPath))), json);
+	UE_LOG(LogExporter, Display, TEXT("Material exported. \"%s\""), *aPath)
+}
+
+void UExport::EnsureMaterial(const FString& aPath)
+{
+	if (std::find(context.myMaterialCache.begin(), context.myMaterialCache.end(), aPath) != context.myMaterialCache.end()) return;
+	ExportMaterial(aPath);
+	context.myMaterialCache.push_back(aPath);
+};
+
+void UExport::EnsureFolder(const FString& aPath)
+{
+	CreateDirectory(ToCStr(aPath), NULL);
+}
+
+nlohmann::json UExport::CreateLightJson(const ULightComponent& aSrc)
+{
+	nlohmann::json result;
+
+	result["color"] = CreateColorJson(aSrc.GetLightColor());
+	result["intensity"] = aSrc.Intensity;
+
+	return result;
+}
+
+nlohmann::json UExport::CreatePointLightJson(const UPointLightComponent& aSrc)
+{
+	nlohmann::json result = CreateLightJson(aSrc);
+
+	result["range"] = aSrc.AttenuationRadius * 0.01f;
+
+	return result;
+}
+
+nlohmann::json UExport::CreateSpotLightJson(const USpotLightComponent& aSrc)
+{
+	nlohmann::json result = CreatePointLightJson(aSrc);
+
+	result["innerRadius"] = aSrc.InnerConeAngle;
+	result["outerRadius"] = aSrc.OuterConeAngle;
+
+	return result;
+}
+
+nlohmann::json UExport::CreateDirectionalLightJson(const UDirectionalLightComponent& aSrc)
+{
+	nlohmann::json result = CreateLightJson(aSrc);
+
+	//no actions needed
+
+	return result;
+}
+
 nlohmann::json UExport::CreateEntity(const AActor& aActor)
 {
 	nlohmann::json entity;
@@ -574,30 +638,30 @@ nlohmann::json UExport::CreateEntity(const AActor& aActor)
 	return entity;
 }
 
-nlohmann::json UExport::CreateFVectorJson(const FVector& aVector)
+nlohmann::json UExport::CreateFVectorJson(const FVector& aSrc)
 {
 	return {
-		{"x", aVector.X},
-		{"y", aVector.Y},
-		{"z", aVector.Z}
+		{"x", aSrc.X},
+		{"y", aSrc.Y},
+		{"z", aSrc.Z}
 	};
 }
-nlohmann::json UExport::CreateFQuatJson(const FQuat& aQuat)
+nlohmann::json UExport::CreateFQuatJson(const FQuat& aSrc)
 {
 	return {
-		{"x", aQuat.X},
-		{"y", aQuat.Y},
-		{"z", aQuat.Z},
-		{"w", aQuat.W}
+		{"x", aSrc.X},
+		{"y", aSrc.Y},
+		{"z", aSrc.Z},
+		{"w", aSrc.W}
 	};
 }
-nlohmann::json UExport::CreateColorJson(const FLinearColor& aColor)
+nlohmann::json UExport::CreateColorJson(const FLinearColor& aSrc)
 {
 	return {
-		{"r", aColor.R},
-		{"g", aColor.G},
-		{"b", aColor.B},
-		{"a", aColor.A}
+		{"r", aSrc.R},
+		{"g", aSrc.G},
+		{"b", aSrc.B},
+		{"a", aSrc.A}
 	};
 }
 
@@ -611,20 +675,18 @@ FVector UExport::ToExportPos(const FVector& aPos)
 
 	return result;
 }
-
 FQuat UExport::ToExportRot(const FQuat& aRot)
 {
 	FQuat result;
 
-	result.X = aRot.X;
+	result.X = aRot.Y;
 	result.Y = aRot.Z;
-	result.Z = -aRot.Y;
+	result.Z = aRot.X;
 	result.W = aRot.W;
 	result.Normalize(); //we shouldn't need this but better safe than sorry
 
 	return result;
 }
-
 FVector UExport::ToExportScale(const FVector& aScale)
 {
 	FVector result;
