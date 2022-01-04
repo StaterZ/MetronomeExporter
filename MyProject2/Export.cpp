@@ -677,13 +677,67 @@ FVector UExport::ToExportPos(const FVector& aPos)
 }
 FQuat UExport::ToExportRot(const FQuat& aRot)
 {
-	FQuat result;
+	//STAGE 1: get matrix data
+	FMatrix mat = FRotationMatrix::Make(aRot);
+	const float m11 = mat.M[0][0];
+	const float m12 = mat.M[0][1];
+	const float m13 = mat.M[0][2];
 
-	result.X = aRot.Y;
-	result.Y = aRot.Z;
-	result.Z = aRot.X;
-	result.W = aRot.W;
-	result.Normalize(); //we shouldn't need this but better safe than sorry
+	const float m22 = mat.M[1][1];
+	const float m23 = mat.M[1][2];
+
+	const float m32 = mat.M[2][1];
+	const float m33 = mat.M[2][2];
+
+	//STAGE 2: use matrix to make euler in the xyz order
+	//https://github.com/mrdoob/three.js/blob/8ff5d832eedfd7bc698301febb60920173770899/src/math/Euler.js#L104
+	FVector xyzEuler;
+	xyzEuler.Y = asin(FMath::Clamp(m13, -1.0f, 1.0f));
+
+	if (FMath::Abs(m13) < 0.9999999f) 
+	{
+
+		xyzEuler.X = FMath::Atan2(-m23, m33);
+		xyzEuler.Z = FMath::Atan2(-m12, m11);
+
+	}
+	else 
+	{
+
+		xyzEuler.X = FMath::Atan2(m32, m22);
+		xyzEuler.Z = 0;
+
+	}
+
+
+	//STAGE 3: make quaternion in xyz order using new xyz euler
+	//https://github.com/mrdoob/three.js/blob/61a4d5c90034e904d77f2787ee11dc512e51968d/src/math/Quaternion.js#L206
+	const float c1 = cos(xyzEuler.X / 2);
+	const float c2 = cos(xyzEuler.Y / 2);
+	const float c3 = cos(xyzEuler.Z / 2);
+
+	const float s1 = sin(xyzEuler.X / 2);
+	const float s2 = sin(xyzEuler.Y / 2);
+	const float s3 = sin(xyzEuler.Z / 2);
+
+	FQuat xyzQuat;
+	xyzQuat.X = s1 * c2 * c3 + c1 * s2 * s3;
+	xyzQuat.Y = c1 * s2 * c3 - s1 * c2 * s3;
+	xyzQuat.Z = c1 * c2 * s3 + s1 * s2 * c3;
+	xyzQuat.W = c1 * c2 * c3 - s1 * s2 * s3;
+
+	//STAGE 4: swizzle xyzQuat into the right component layout for metronome
+	FQuat result;
+	result.X = xyzQuat.Y;
+	result.Y = xyzQuat.Z;
+	result.Z = xyzQuat.X;
+	result.W = -xyzQuat.W;
+	
+	//result.X = aRot.Y;
+	//result.Y = aRot.Z;
+	//result.Z = aRot.X;
+	//result.W = aRot.W;
+	//result.Normalize(); //we shouldn't need this but better safe than sorry
 
 	return result;
 }
