@@ -78,9 +78,8 @@ private:
 	nlohmann::json CreateFQuatJson(const FQuat& aSrc);
 	nlohmann::json CreateColorJson(const FLinearColor& aSrc);
 
-	static FVector ToExportPos(const FVector& aPos);
-	static FQuat ToExportRot(const FQuat& aRot);
-	static FVector ToExportScale(const FVector& aScale);
+	static FVector ToExportFVector(const FVector& aSrc);
+	static FQuat ToExportFQuat(const FQuat& aSrc);
 
 	ExportContext context;
 };

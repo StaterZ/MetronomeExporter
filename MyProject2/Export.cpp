@@ -339,7 +339,7 @@ void UExport::ExportNavMesh(const std::string& aOutPath)
 	std::ofstream file(aOutPath);
 	for (const FVector& vec : vertices)
 	{
-		FVector newVec = ToExportPos(vec);
+		FVector newVec = ToExportFVector(vec);
 		file << "v " << newVec.X << " " << newVec.Y << " " << newVec.Z << std::endl;
 	}
 
@@ -547,11 +547,45 @@ nlohmann::json UExport::CreateTransformJson(const FTransform& aSrc)
 {
 	nlohmann::json result;
 
-	result["pos"] = CreateFVectorJson(ToExportPos(aSrc.GetLocation() * 0.01f));
+	result["pos"] = CreateFVectorJson(ToExportFVector(aSrc.GetLocation() * 0.01f));
 	//result["rot"] = CreateFVectorJson(ToExportPos(aSrc.GetRotation().Euler()));
-	result["rot"] = CreateFQuatJson(ToExportRot(aSrc.GetRotation()));
-	result["scale"] = CreateFVectorJson(ToExportScale(aSrc.GetScale3D()));
+	//result["rot"] = CreateFQuatJson(ToExportRot(aSrc.GetRotation()));
+	result["scale"] = CreateFVectorJson(ToExportFVector(aSrc.GetScale3D()).GetAbs());
 
+
+
+	{ //test
+		//STAGE 1: get matrix data
+		FMatrix mat = FRotationMatrix::Make(aSrc.GetRotation());
+		const float m11 = mat.M[0][0];
+		const float m12 = mat.M[0][1];
+		const float m13 = mat.M[0][2];
+
+		const float m22 = mat.M[1][1];
+		const float m23 = mat.M[1][2];
+
+		const float m32 = mat.M[2][1];
+		const float m33 = mat.M[2][2];
+
+		//STAGE 2: use matrix to make euler in the xyz order
+		//https://github.com/mrdoob/three.js/blob/8ff5d832eedfd7bc698301febb60920173770899/src/math/Euler.js#L104
+		FVector xyzEuler;
+		xyzEuler.Y = asin(FMath::Clamp(m13, -1.0f, 1.0f));
+
+		if (FMath::Abs(m13) < 0.9999999f) 
+		{
+			xyzEuler.X = FMath::Atan2(-m23, m33);
+			xyzEuler.Z = FMath::Atan2(-m12, m11);
+		}
+		else 
+		{
+			xyzEuler.X = FMath::Atan2(m32, m22);
+			xyzEuler.Z = 0;
+		}
+
+		constexpr float radToDeg = 180 / 3.14159265359f;
+		result["rot"] = CreateFVectorJson(ToExportFVector(-xyzEuler * radToDeg));
+	}
 	return result;
 }
 
@@ -665,20 +699,20 @@ nlohmann::json UExport::CreateColorJson(const FLinearColor& aSrc)
 	};
 }
 
-FVector UExport::ToExportPos(const FVector& aPos)
+FVector UExport::ToExportFVector(const FVector& aSrc)
 {
 	FVector result;
 
-	result.X = aPos.Y;
-	result.Y = aPos.Z;
-	result.Z = aPos.X;
+	result.X = aSrc.Y;
+	result.Y = aSrc.Z;
+	result.Z = aSrc.X;
 
 	return result;
 }
-FQuat UExport::ToExportRot(const FQuat& aRot)
+FQuat UExport::ToExportFQuat(const FQuat& aSrc)
 {
 	//STAGE 1: get matrix data
-	FMatrix mat = FRotationMatrix::Make(aRot);
+	FMatrix mat = FRotationMatrix::Make(aSrc);
 	const float m11 = mat.M[0][0];
 	const float m12 = mat.M[0][1];
 	const float m13 = mat.M[0][2];
@@ -696,17 +730,13 @@ FQuat UExport::ToExportRot(const FQuat& aRot)
 
 	if (FMath::Abs(m13) < 0.9999999f) 
 	{
-
 		xyzEuler.X = FMath::Atan2(-m23, m33);
 		xyzEuler.Z = FMath::Atan2(-m12, m11);
-
 	}
 	else 
 	{
-
 		xyzEuler.X = FMath::Atan2(m32, m22);
 		xyzEuler.Z = 0;
-
 	}
 
 
@@ -738,16 +768,6 @@ FQuat UExport::ToExportRot(const FQuat& aRot)
 	//result.Z = aRot.X;
 	//result.W = aRot.W;
 	//result.Normalize(); //we shouldn't need this but better safe than sorry
-
-	return result;
-}
-FVector UExport::ToExportScale(const FVector& aScale)
-{
-	FVector result;
-
-	result.X = aScale.Y;
-	result.Y = aScale.Z;
-	result.Z = aScale.X;
 
 	return result;
 }
