@@ -68,6 +68,8 @@ private:
 	void EnsureMaterial(const FString& aPath);
 	void EnsureFolder(const FString& aPath);
 
+	nlohmann::json CreateNameTagJson(const std::string& aName);
+	nlohmann::json CreateParentJson(const TArray<AActor*>& someChildren);
 	nlohmann::json CreateTransformJson(const FTransform& aSrc);
 	nlohmann::json CreateLightJson(const ULightComponent& aSrc);
 	nlohmann::json CreatePointLightJson(const UPointLightComponent& aSrc);

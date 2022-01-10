@@ -376,14 +376,15 @@ void UExport::ExportScene(const std::string& aOutPath)
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), classToFind, actorsFound);
 
 	nlohmann::json json;
-	json["fileVersion"] = "3.0";
+	json["fileVersion"] = "3.1";
 	nlohmann::json& root = json["root"];
-	root["name"] = "UnrealScene";
-	root["components"] = std::vector<nlohmann::json>();
+	root["components"].push_back(CreateComponentJson("NameTag", CreateNameTagJson("UnrealScene")));
+	TArray<AActor*> children;
 	for (size_t i = 0; i < actorsFound.Num(); i++)
 	{
-		root["children"][i] = CreateEntity(*actorsFound[i]);
+		children.Add(actorsFound[i]);
 	}
+	root["components"].push_back(CreateComponentJson("Parent", CreateParentJson(children)));
 
 	WriteJsonToFile(aOutPath, json);
 }
@@ -392,24 +393,31 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 {
 	nlohmann::json components;
 
-	//Transforms
-	components.push_back(CreateComponentJson("TransformData", CreateTransformJson(aActor.GetTransform())));
+	//NameTag
+	components.push_back(CreateComponentJson("NameTag", CreateNameTagJson(TCHAR_TO_UTF8(ToCStr(aActor.GetName())))));
+	
+	
+	//Parent
+	components.push_back(CreateComponentJson("Parent", CreateParentJson(aActor.Children)));
+
+	//Transform
+	components.push_back(CreateComponentJson("Transform", CreateTransformJson(aActor.GetTransform())));
 
 	//Pointlights
 	ForeachComponent<UPointLightComponent>(aActor, [&](UPointLightComponent& aSrc){
 		CheckLight(aSrc);
-		components.push_back(CreateComponentJson("PointLightData", CreatePointLightJson(aSrc)));
+		components.push_back(CreateComponentJson("PointLight", CreatePointLightJson(aSrc)));
 	});
 
 	//Spotlights
 	ForeachComponent<USpotLightComponent>(aActor, [&](USpotLightComponent& aSrc) {
 		CheckLight(aSrc);
-		components.push_back(CreateComponentJson("SpotLightData", CreateSpotLightJson(aSrc)));
+		components.push_back(CreateComponentJson("SpotLight", CreateSpotLightJson(aSrc)));
 	});
 
 	//DirectionalLights
 	ForeachComponent<UDirectionalLightComponent>(aActor, [&](UDirectionalLightComponent& aSrc) {
-		components.push_back(CreateComponentJson("DirectionalLightData", CreateDirectionalLightJson(aSrc)));
+		components.push_back(CreateComponentJson("DirectionalLight", CreateDirectionalLightJson(aSrc)));
 	});
 
 	//MeshRenderers
@@ -468,7 +476,7 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 			params["materials"].push_back(TCHAR_TO_UTF8(ToCStr(materialPath)));
 		}
 
-		components.push_back(CreateComponentJson("MeshRendererData", params));
+		components.push_back(CreateComponentJson("MeshRenderer", params));
 	});
 
 	//Cameras
@@ -477,7 +485,7 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 		params["fov"] = aSrc.FieldOfView;
 		params["nearPlane"] = nearPlane;
 		params["farPlane"] = farPlane;
-		components.push_back(CreateComponentJson("CameraData", params));
+		components.push_back(CreateComponentJson("Camera", params));
 	});
 
 	//LevelTrigger
@@ -487,14 +495,14 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 		params["spritePath"] = TCHAR_TO_UTF8(ToCStr(aSrc.spritePath));
 		params["spritePath2"] = TCHAR_TO_UTF8(ToCStr(aSrc.spritePath2));
 		params["duration"] = aSrc.duration;
-		components.push_back(CreateComponentJson("LevelTriggerData", params));
+		components.push_back(CreateComponentJson("LevelTrigger", params));
 	});
 
 	//SpellTrigger
 	ForeachComponent<USpellTrigger>(aActor, [&](USpellTrigger& aSrc) {
 		nlohmann::json params;
 		params["spellID"] = aSrc.spellID;
-		components.push_back(CreateComponentJson("SpellTriggerData", params));
+		components.push_back(CreateComponentJson("SpellTrigger", params));
 	});
 
 	return components;
@@ -541,6 +549,27 @@ void UExport::WriteJsonToFile(const std::string& aPath, const nlohmann::json& aJ
 	}
 	stream << aJson;
 	stream.close();
+}
+
+nlohmann::json UExport::CreateNameTagJson(const std::string& aName)
+{
+	nlohmann::json result;
+
+	result["name"] = aName;
+
+	return result;
+}
+
+nlohmann::json UExport::CreateParentJson(const TArray<AActor*>& someChildren)
+{
+	nlohmann::json result;
+
+	for (size_t i = 0; i < someChildren.Num(); i++)
+	{
+		result["children"][i] = CreateEntity(*someChildren[i]);
+	}
+
+	return result;
 }
 
 nlohmann::json UExport::CreateTransformJson(const FTransform& aSrc)
@@ -660,14 +689,8 @@ nlohmann::json UExport::CreateDirectionalLightJson(const UDirectionalLightCompon
 nlohmann::json UExport::CreateEntity(const AActor& aActor)
 {
 	nlohmann::json entity;
-	entity["name"] = TCHAR_TO_UTF8(ToCStr(aActor.GetName()));
 
 	entity["components"] = CreateComponents(aActor);
-
-	for (size_t i = 0; i < aActor.Children.Num(); i++)
-	{
-		entity["children"][i] = CreateEntity(*aActor.Children[i]);
-	}
 
 	return entity;
 }
