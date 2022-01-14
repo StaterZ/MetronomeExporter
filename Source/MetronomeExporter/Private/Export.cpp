@@ -14,8 +14,8 @@
 #include <iomanip>
 #include <string>
 #include <vector>
-#include "LevelTrigger.h"
-#include "SpellTrigger.h"
+// #include "LevelTrigger.h"
+// #include "SpellTrigger.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -220,13 +220,13 @@ namespace delaunay
 		/* Remove original super triangle. */
 		d.triangles.erase(
 			std::remove_if(d.triangles.begin(), d.triangles.end(),
-			[&](auto const& tri) {
-				return (
-					(tri.p0 == p0 || tri.p1 == p0 || tri.p2 == p0) ||
-					(tri.p0 == p1 || tri.p1 == p1 || tri.p2 == p1) ||
-					(tri.p0 == p2 || tri.p1 == p2 || tri.p2 == p2)
-				);
-			}),
+				[&](auto const& tri) {
+					return (
+						(tri.p0 == p0 || tri.p1 == p0 || tri.p2 == p0) ||
+						(tri.p0 == p1 || tri.p1 == p1 || tri.p2 == p1) ||
+						(tri.p0 == p2 || tri.p1 == p2 || tri.p2 == p2)
+						);
+				}),
 			d.triangles.end());
 
 		/* Add edges. */
@@ -281,7 +281,7 @@ void UExport::ExportNavMesh(const std::string& aOutPath)
 	if (recastNavMesh == nullptr)
 	{
 		UE_LOG(LogExporter, Warning, TEXT("No Navmesh detected, Skipping..."))
-		return;
+			return;
 	}
 	dtNavMesh* navMesh = recastNavMesh->GetRecastMesh();
 
@@ -395,8 +395,8 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 
 	//NameTag
 	components.push_back(CreateComponentJson("NameTag", CreateNameTagJson(TCHAR_TO_UTF8(ToCStr(aActor.GetName())))));
-	
-	
+
+
 	//Parent
 	components.push_back(CreateComponentJson("Parent", CreateParentJson(aActor.Children)));
 
@@ -407,18 +407,18 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 	ForeachComponent<UPointLightComponent>(aActor, [&](UPointLightComponent& aSrc){
 		CheckLight(aSrc);
 		components.push_back(CreateComponentJson("PointLight", CreatePointLightJson(aSrc)));
-	});
+		});
 
 	//Spotlights
 	ForeachComponent<USpotLightComponent>(aActor, [&](USpotLightComponent& aSrc) {
 		CheckLight(aSrc);
 		components.push_back(CreateComponentJson("SpotLight", CreateSpotLightJson(aSrc)));
-	});
+		});
 
 	//DirectionalLights
 	ForeachComponent<UDirectionalLightComponent>(aActor, [&](UDirectionalLightComponent& aSrc) {
 		components.push_back(CreateComponentJson("DirectionalLight", CreateDirectionalLightJson(aSrc)));
-	});
+		});
 
 	//MeshRenderers
 	ForeachComponent<UStaticMeshComponent>(aActor, [&](UStaticMeshComponent& aSrc) {
@@ -429,7 +429,7 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 		if (modelPath == "C:/Program Files/Epic Games/UE_4.27/Engine/Content/EditorMeshes/MatineeCam_SM.FBX") return;
 
 		nlohmann::json params;
-		
+
 		//process path
 		switch (ResolvePath(modelPath, "Content", "Assets"))
 		{
@@ -448,11 +448,11 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 		}
 		case ResolvePathResult::MakeRelativeFailed:
 			UE_LOG(LogExporter, Error, TEXT("Bad model path! Failed to make path relative. Skipping \"%s\""), *modelPath)
-			modelPath = modelFallbackPath;
+				modelPath = modelFallbackPath;
 			break;
 		case ResolvePathResult::PrefixFailed:
 			UE_LOG(LogExporter, Error, TEXT("Bad model path! Failed to replace root directory. Skipping \"%s\""), *modelPath)
-			modelPath = modelFallbackPath;
+				modelPath = modelFallbackPath;
 			break;
 		}
 		params["modelPath"] = TCHAR_TO_UTF8(ToCStr(modelPath));
@@ -461,13 +461,19 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 		for (const UMaterialInterface* material : aSrc.GetMaterials())
 		{
 			FString materialPath;
-			FString name = material->GetName();
-			if (name != "WorldGridMaterial")
-			{
-				EnsureFolder("Materials");
-				materialPath = "Assets/Materials/" + name + ".mat";
-				FString materialExportPath = "Materials/" + name + ".mat";
-				EnsureMaterial(materialPath);
+			if (material != nullptr) {
+				FString name = material->GetName();
+				if (name != "WorldGridMaterial")
+				{
+					EnsureFolder("Materials");
+					materialPath = "Assets/Materials/" + name + ".mat";
+					FString materialExportPath = "Materials/" + name + ".mat";
+					EnsureMaterial(materialPath);
+				}
+				else
+				{
+					materialPath = materialFallbackPath;
+				}
 			}
 			else
 			{
@@ -477,7 +483,7 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 		}
 
 		components.push_back(CreateComponentJson("MeshRenderer", params));
-	});
+		});
 
 	//Cameras
 	ForeachComponent<UCameraComponent>(aActor, [&](UCameraComponent& aSrc) {
@@ -486,24 +492,24 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 		params["nearPlane"] = nearPlane;
 		params["farPlane"] = farPlane;
 		components.push_back(CreateComponentJson("Camera", params));
-	});
+		});
 
-	//LevelTrigger
-	ForeachComponent<ULevelTrigger>(aActor, [&](ULevelTrigger& aSrc) {
-		nlohmann::json params;
-		params["soundPath"] = TCHAR_TO_UTF8(ToCStr(aSrc.audioPath));
-		params["spritePath"] = TCHAR_TO_UTF8(ToCStr(aSrc.spritePath));
-		params["spritePath2"] = TCHAR_TO_UTF8(ToCStr(aSrc.spritePath2));
-		params["duration"] = aSrc.duration;
-		components.push_back(CreateComponentJson("LevelTrigger", params));
-	});
-
-	//SpellTrigger
-	ForeachComponent<USpellTrigger>(aActor, [&](USpellTrigger& aSrc) {
-		nlohmann::json params;
-		params["spellID"] = aSrc.spellID;
-		components.push_back(CreateComponentJson("SpellTrigger", params));
-	});
+	// //LevelTrigger
+	// ForeachComponent<ULevelTrigger>(aActor, [&](ULevelTrigger& aSrc) {
+	// 	nlohmann::json params;
+	// 	params["soundPath"] = TCHAR_TO_UTF8(ToCStr(aSrc.audioPath));
+	// 	params["spritePath"] = TCHAR_TO_UTF8(ToCStr(aSrc.spritePath));
+	// 	params["spritePath2"] = TCHAR_TO_UTF8(ToCStr(aSrc.spritePath2));
+	// 	params["duration"] = aSrc.duration;
+	// 	components.push_back(CreateComponentJson("LevelTrigger", params));
+	// 	});
+	//
+	// //SpellTrigger
+	// ForeachComponent<USpellTrigger>(aActor, [&](USpellTrigger& aSrc) {
+	// 	nlohmann::json params;
+	// 	params["spellID"] = aSrc.spellID;
+	// 	components.push_back(CreateComponentJson("SpellTrigger", params));
+	// 	});
 
 	return components;
 }
@@ -584,7 +590,7 @@ nlohmann::json UExport::CreateTransformJson(const FTransform& aSrc)
 
 
 	{ //test
-		//STAGE 1: get matrix data
+	  //STAGE 1: get matrix data
 		FMatrix mat = FRotationMatrix::Make(aSrc.GetRotation());
 		const float m11 = mat.M[0][0];
 		const float m12 = mat.M[0][1];
@@ -631,7 +637,7 @@ UExport::ResolvePathResult UExport::ResolvePath(FString& aPath, const FString& a
 void UExport::ExportMaterial(const FString& aPath)
 {
 	nlohmann::json json;
-	
+
 	WriteJsonToFile(std::string(TCHAR_TO_UTF8(ToCStr(aPath))), json);
 	UE_LOG(LogExporter, Display, TEXT("Material exported. \"%s\""), *aPath)
 }
@@ -785,7 +791,7 @@ FQuat UExport::ToExportFQuat(const FQuat& aSrc)
 	result.Y = xyzQuat.Z;
 	result.Z = xyzQuat.X;
 	result.W = -xyzQuat.W;
-	
+
 	//result.X = aRot.Y;
 	//result.Y = aRot.Z;
 	//result.Z = aRot.X;

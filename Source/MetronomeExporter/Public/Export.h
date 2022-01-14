@@ -13,7 +13,7 @@
 DECLARE_LOG_CATEGORY_EXTERN(LogExporter, Log, All);
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
-class MYPROJECT2_API UExport : public UActorComponent
+class METRONOMEEXPORTER_API UExport : public UActorComponent
 {
 	GENERATED_BODY()
 

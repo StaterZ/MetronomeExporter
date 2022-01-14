@@ -1,0 +1,24 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "3.1",
+	"FriendlyName": "MetronomeExporter",
+	"Description": "",
+	"Category": "Exporters",
+	"CreatedBy": "StaterZ",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": false,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "MetronomeExporter",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	]
+}

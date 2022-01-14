@@ -1,13 +1,2 @@
-*
-!*/
-
-!.gitignore
-
-!*/Export.cpp
-!*/Export.h
-!*/LevelTrigger.cpp
-!*/LevelTrigger.h
-!*/SpellTrigger.cpp
-!*/SpellTrigger.h
-!*/json.hpp
-!*/*.Build.cs
+Binaries
+Intermediate
