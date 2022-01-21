@@ -407,18 +407,18 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 	ForeachComponent<UPointLightComponent>(aActor, [&](UPointLightComponent& aSrc){
 		CheckLight(aSrc);
 		components.push_back(CreateComponentJson("PointLight", CreatePointLightJson(aSrc)));
-		});
+	});
 
 	//Spotlights
 	ForeachComponent<USpotLightComponent>(aActor, [&](USpotLightComponent& aSrc) {
 		CheckLight(aSrc);
 		components.push_back(CreateComponentJson("SpotLight", CreateSpotLightJson(aSrc)));
-		});
+	});
 
 	//DirectionalLights
 	ForeachComponent<UDirectionalLightComponent>(aActor, [&](UDirectionalLightComponent& aSrc) {
 		components.push_back(CreateComponentJson("DirectionalLight", CreateDirectionalLightJson(aSrc)));
-		});
+	});
 
 	//MeshRenderers
 	ForeachComponent<UStaticMeshComponent>(aActor, [&](UStaticMeshComponent& aSrc) {
@@ -483,7 +483,7 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 		}
 
 		components.push_back(CreateComponentJson("MeshRenderer", params));
-		});
+	});
 
 	//Cameras
 	ForeachComponent<UCameraComponent>(aActor, [&](UCameraComponent& aSrc) {
@@ -492,7 +492,7 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 		params["nearPlane"] = nearPlane;
 		params["farPlane"] = farPlane;
 		components.push_back(CreateComponentJson("Camera", params));
-		});
+	});
 
 	// //LevelTrigger
 	// ForeachComponent<ULevelTrigger>(aActor, [&](ULevelTrigger& aSrc) {
@@ -502,14 +502,14 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 	// 	params["spritePath2"] = TCHAR_TO_UTF8(ToCStr(aSrc.spritePath2));
 	// 	params["duration"] = aSrc.duration;
 	// 	components.push_back(CreateComponentJson("LevelTrigger", params));
-	// 	});
+	// });
 	//
 	// //SpellTrigger
 	// ForeachComponent<USpellTrigger>(aActor, [&](USpellTrigger& aSrc) {
 	// 	nlohmann::json params;
 	// 	params["spellID"] = aSrc.spellID;
 	// 	components.push_back(CreateComponentJson("SpellTrigger", params));
-	// 	});
+	// });
 
 	return components;
 }
