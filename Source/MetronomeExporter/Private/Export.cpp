@@ -379,22 +379,25 @@ void UExport::ExportScene(const std::string& aOutPath)
 	for (size_t i = 0; i < actorsFound.Num(); i++)
 	{
 		AActor* actor = actorsFound[i];
-		const FString folderPath = actor->GetFolderPath().ToString();
-		TArray<FString> folderNames;
-		folderPath.ParseIntoArray(folderNames, TEXT("/"), true);
-		Folder* folder = &root;
-		for (FString& folderName : folderNames)
-		{
-			const std::string folderStr = TCHAR_TO_UTF8(ToCStr(folderName));
+		//const FString folderPath = actor->GetFolderPath().ToString();
+		const FString folderPath = ("#" + actor->GetFolderPath().ToString() + "#").LeftChop(1).RightChop(1); //i have no clue why but for some reason the wide string in here doesn't play nice without this
 
-			const auto it = folder->mySubFolders.find(folderStr);
-			if (it != folder->mySubFolders.end())
+		Folder* folder = &root;
+		if (folderPath != "None") {
+			TArray<FString> folderNames;
+			folderPath.ParseIntoArray(folderNames, TEXT("/"), true);
+			for (FString& folderName : folderNames)
 			{
-				folder = &it->second;
-			}
-			else
-			{
-				folder = &folder->mySubFolders.insert({folderStr, {}}).first->second;
+				const std::string folderStr = TCHAR_TO_UTF8(ToCStr(folderName));
+
+				const auto it = folder->mySubFolders.find(folderStr);
+				if (it != folder->mySubFolders.end())
+				{
+					folder = &it->second;
+				} else
+				{
+					folder = &folder->mySubFolders.insert({ folderStr, {} }).first->second;
+				}
 			}
 		}
 		folder->myActors.Push(actor);
@@ -723,10 +726,16 @@ nlohmann::json UExport::CreateFolderEntity(const std::string& aName, const Folde
 
 	components.push_back(CreateComponentJson("NameTag", CreateNameTagJson(aName + " [FOLDER]")));
 	nlohmann::json parent = CreateComponentJson("Parent", CreateParentJson(aFolder.myActors));
+	nlohmann::json children; //we use this to force the folders to the top of the hierarchy
 	for (std::pair<const std::string, Folder> pair : aFolder.mySubFolders)
 	{
-		parent["params"]["children"].push_back(CreateFolderEntity(pair.first, pair.second));
+		children.push_back(CreateFolderEntity(pair.first, pair.second));
 	}
+	for (nlohmann::json& child: parent["params"]["children"])
+	{
+		children.push_back(child);
+	}
+	parent["params"]["children"] = children;
 	components.push_back(parent);
 
 	return entity;
