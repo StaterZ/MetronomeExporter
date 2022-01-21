@@ -394,8 +394,7 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 	nlohmann::json components;
 
 	//NameTag
-	components.push_back(CreateComponentJson("NameTag", CreateNameTagJson(TCHAR_TO_UTF8(ToCStr(aActor.GetName())))));
-
+	components.push_back(CreateComponentJson("NameTag", CreateNameTagJson(TCHAR_TO_UTF8(ToCStr(aActor.GetActorLabel())))));
 
 	//Parent
 	components.push_back(CreateComponentJson("Parent", CreateParentJson(aActor.Children)));
