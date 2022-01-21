@@ -42,12 +42,17 @@ private:
 	{
 		std::vector<FString> myMaterialCache;
 	};
+	struct Folder {
+		std::map<std::string, Folder> mySubFolders;
+		TArray<AActor*> myActors;
+	};
 
 	void ExportNavMesh(const std::string& aOutPath);
 	int FindIndex(const FVector& aKey, const TArray<FVector>& someVertices);
 
 	void ExportScene(const std::string& aOutPath);
 	nlohmann::json CreateEntity(const AActor& aActor);
+	nlohmann::json CreateFolderEntity(const std::string& aName, const Folder& aFolder);
 	nlohmann::json CreateComponents(const AActor& aActor);
 	static nlohmann::json CreateComponentJson(const std::string& aType, const nlohmann::json& aParams);
 

@@ -375,17 +375,34 @@ void UExport::ExportScene(const std::string& aOutPath)
 	TSubclassOf<AActor> classToFind = AActor::StaticClass();
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), classToFind, actorsFound);
 
-	nlohmann::json json;
-	json["fileVersion"] = "3.1";
-	nlohmann::json& root = json["root"];
-	root["components"].push_back(CreateComponentJson("NameTag", CreateNameTagJson("UnrealScene")));
-	TArray<AActor*> children;
+	Folder root;
 	for (size_t i = 0; i < actorsFound.Num(); i++)
 	{
-		children.Add(actorsFound[i]);
-	}
-	root["components"].push_back(CreateComponentJson("Parent", CreateParentJson(children)));
+		AActor* actor = actorsFound[i];
+		const FString folderPath = actor->GetFolderPath().ToString();
+		TArray<FString> folderNames;
+		folderPath.ParseIntoArray(folderNames, TEXT("/"), true);
+		Folder* folder = &root;
+		for (FString& folderName : folderNames)
+		{
+			const std::string folderStr = TCHAR_TO_UTF8(ToCStr(folderName));
 
+			const auto it = folder->mySubFolders.find(folderStr);
+			if (it != folder->mySubFolders.end())
+			{
+				folder = &it->second;
+			}
+			else
+			{
+				folder = &folder->mySubFolders.insert({folderStr, {}}).first->second;
+			}
+		}
+		folder->myActors.Push(actor);
+	}
+
+	nlohmann::json json;
+	json["fileVersion"] = "3.1";
+	json["root"] = CreateFolderEntity("UnrealScene", root);;
 	WriteJsonToFile(aOutPath, json);
 }
 
@@ -696,6 +713,21 @@ nlohmann::json UExport::CreateEntity(const AActor& aActor)
 	nlohmann::json entity;
 
 	entity["components"] = CreateComponents(aActor);
+
+	return entity;
+}
+
+nlohmann::json UExport::CreateFolderEntity(const std::string& aName, const Folder& aFolder) {
+	nlohmann::json entity;
+	nlohmann::json& components = entity["components"];
+
+	components.push_back(CreateComponentJson("NameTag", CreateNameTagJson(aName + " [FOLDER]")));
+	nlohmann::json parent = CreateComponentJson("Parent", CreateParentJson(aFolder.myActors));
+	for (std::pair<const std::string, Folder> pair : aFolder.mySubFolders)
+	{
+		parent["params"]["children"].push_back(CreateFolderEntity(pair.first, pair.second));
+	}
+	components.push_back(parent);
 
 	return entity;
 }
