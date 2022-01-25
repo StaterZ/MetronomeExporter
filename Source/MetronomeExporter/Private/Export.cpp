@@ -7,6 +7,8 @@
 #include "Components/PointLightComponent.h"
 #include "Components/SpotLightComponent.h"
 #include "Components/DirectionalLightComponent.h"
+#include "Components/BoxComponent.h"
+#include "Components/SphereComponent.h"
 #include "Camera/CameraComponent.h"
 #include "EditorFramework/AssetImportData.h"
 #include "Kismet/GameplayStatics.h"
@@ -14,8 +16,6 @@
 #include <iomanip>
 #include <string>
 #include <vector>
-// #include "LevelTrigger.h"
-// #include "SpellTrigger.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -513,22 +513,21 @@ nlohmann::json UExport::CreateComponents(const AActor& aActor)
 		components.push_back(CreateComponentJson("Camera", params));
 	});
 
-	// //LevelTrigger
-	// ForeachComponent<ULevelTrigger>(aActor, [&](ULevelTrigger& aSrc) {
-	// 	nlohmann::json params;
-	// 	params["soundPath"] = TCHAR_TO_UTF8(ToCStr(aSrc.audioPath));
-	// 	params["spritePath"] = TCHAR_TO_UTF8(ToCStr(aSrc.spritePath));
-	// 	params["spritePath2"] = TCHAR_TO_UTF8(ToCStr(aSrc.spritePath2));
-	// 	params["duration"] = aSrc.duration;
-	// 	components.push_back(CreateComponentJson("LevelTrigger", params));
-	// });
-	//
-	// //SpellTrigger
-	// ForeachComponent<USpellTrigger>(aActor, [&](USpellTrigger& aSrc) {
-	// 	nlohmann::json params;
-	// 	params["spellID"] = aSrc.spellID;
-	// 	components.push_back(CreateComponentJson("SpellTrigger", params));
-	// });
+	//Box Collider
+	ForeachComponent<UBoxComponent>(aActor, [&](UBoxComponent& aSrc) {
+		nlohmann::json params;
+		params["size"] = CreateFVectorJson(ToExportFVector(aSrc.GetUnscaledBoxExtent() * 2));
+		components.push_back(CreateComponentJson("BoxCollider", params));
+
+	});
+
+	//Box Collider
+	ForeachComponent<USphereComponent>(aActor, [&](USphereComponent& aSrc) {
+		nlohmann::json params;
+		params["radius"] = aSrc.GetUnscaledSphereRadius();
+		components.push_back(CreateComponentJson("SphereCollider", params));
+
+	});
 
 	return components;
 }
